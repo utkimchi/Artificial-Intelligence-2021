@@ -54,8 +54,10 @@ class Deck():
     def drawCard(self):
         return self.decklist.pop(0)
 
+
 class Player():    
-    def __init__(self,name):
+    def __init__(self,name,type):
+        self.type = type
         self.name = name
         self.hand = []
         self.played = []
@@ -87,7 +89,6 @@ class Player():
                 score += c.value
         return score
 
-
     '''
     This checks for melds at the start of a player's turn. Makes sure that the cards in hand and the meld
     pile are in the right.
@@ -99,7 +100,10 @@ class Player():
         #For cards in melds, remove them from the calculations
         for s in self.melds:
             for c in s:
-                newMelds.remove(c)
+                try:
+                    newMelds.remove(c)
+                except:
+                    pass
 
 
         ## Try to append card to existing melds
@@ -275,33 +279,41 @@ class Player():
                 except:
                     pass
 
-        #Discard Pile Score Calc
-        if len(disc_p) == 1:
-            disc_pile_card , disc_pile_min_score = self.myopicMeldScore(newMelds,[disc_p[0]],len(deck.decklist))
+        #For random actor just pick randomly which card to pick up and a random card to discard.
+
+        if self.type == "R":
+            pile_choice = random.randint(1,2)
+            disc_pile_card = newMelds[random.randint(0,len(newMelds)-1)]
+            return disc_pile_card, pile_choice
+
         else:
-            disc_pile_card , disc_pile_min_score = self.myopicMeldScore(newMelds,[disc_p[-1]],len(deck.decklist))
+            #Discard Pile Score Calc
+            if len(disc_p) == 1:
+                disc_pile_card , disc_pile_min_score = self.myopicMeldScore(newMelds,[disc_p[0]],len(deck.decklist))
+            else:
+                disc_pile_card , disc_pile_min_score = self.myopicMeldScore(newMelds,[disc_p[-1]],len(deck.decklist))
 
-        disc_pile_min_score = hs - disc_pile_min_score
+            disc_pile_min_score = hs - disc_pile_min_score
 
-        #print(disc_pile_card.showCard()," is the card we would discard from discard pile. It's evaluation value is: ", disc_pile_min_score)
+            #print(disc_pile_card.showCard()," is the card we would discard from discard pile. It's evaluation value is: ", disc_pile_min_score)
 
-        #Deck Pile Score Calc
+            #Deck Pile Score Calc
 
-        deck_pile_card, deck_min_score = self.myopicMeldScore(newMelds,deck,len(deck.decklist))
-
-
-        #print("DISCARD VALUE: ", disc_pile_min_score, " --- DRAW VALUE: ", deck_min_score)
-
-        #print("Current Hand: ",self.showHand())
-        #print("Discard Card: ", disc_pile_card.showCard())
+            deck_pile_card, deck_min_score = self.myopicMeldScore(newMelds,deck,len(deck.decklist))
 
 
-        #Draw from Discard Pile if the discard pile minimum is smaller 
-        if disc_pile_min_score < deck_min_score:
-            return disc_pile_card, 1
-        #
-        else:
-            return deck_pile_card, 2
+            #print("DISCARD VALUE: ", disc_pile_min_score, " --- DRAW VALUE: ", deck_min_score)
+
+            #print("Current Hand: ",self.showHand())
+            #print("Discard Card: ", disc_pile_card.showCard())
+
+
+            #Draw from Discard Pile if the discard pile minimum is smaller 
+            if disc_pile_min_score < deck_min_score:
+                return disc_pile_card, 1
+            #
+            else:
+                return deck_pile_card, 2
 
 
 class Field():
@@ -357,8 +369,13 @@ for i in range(num_games):
     print("Game #",i)
 
     #Main
-    robot = Player("Robot")
-    human = Player("Human")
+    robot = Player("Robot","N")
+
+    #Random Actor
+    human = Player("Human","R")
+
+    #Normal Actor
+    #human = Player("Human","N")
     players = [robot,human]
     ndeck = Deck()
     p_field = Field(players,ndeck)
@@ -444,7 +461,10 @@ for i in range(num_games):
                 newMelds = p.hand.copy()
                 for s in p.melds:
                     for c in s:
-                        newMelds.remove(c)
+                        try:
+                            newMelds.remove(c)
+                        except:
+                            pass
 
                 discard_card, score = p.myopicMeldScore(newMelds,[drawn_c],len(p_field.deck.decklist))
                 p.hand.append(drawn_c)
@@ -464,18 +484,12 @@ for i in range(num_games):
 
 
             if p == human:
-                score= hs
+                score = hs
             else:
                 score = rs
 
-            #ROBOT TURN
-            #print(p_field.discardpile)
+            #Player Turn - Returns card to discard if discard pile card is draw and the evaluation of the discard card
             discard_card, pileaction = p.chooseDiscard(p_field.discardpile,p_field.deck,score)
-
-            #print("ROBOT HAND:", p.showHand())
-            #print("SHOULD DISCARD?: ", discard_card.showCard())
-            #print("BUT HE SHOULD DRAW FROM PILE:", pileaction)
-            #print("THIS WAS THE CARD ON THE DISCARD PILE:", p_field.discardpile[0].showCard())
 
             #Draw from Discard
             if pileaction == 1:
@@ -536,7 +550,7 @@ for i in range(num_games):
     oldrs = rs
     oldhs = hs
 
-    #Check for layoffs
+    #Check for layoffs at the end of the game
 
     if rs < hs:
         #print("ROBOT WON: CHECKING IF HUMAN CAN LOWER SCORE")
@@ -546,7 +560,10 @@ for i in range(num_games):
         newMelds = human.hand.copy()
         for s in human.melds:
             for c in s:
-                newMelds.remove(c)
+                try:
+                    newMelds.remove(c)
+                except:
+                    pass
 
         for c in newMelds:
             #print("Does this card tack on?", c.showCard())
@@ -591,7 +608,10 @@ for i in range(num_games):
         newMelds = robot.hand.copy()
         for s in robot.melds:
             for c in s:
-                newMelds.remove(c)
+                try:
+                    newMelds.remove(c)
+                except:
+                    pass
 
         for c in newMelds:
             #print("Does this card tack on?", c.showCard())
@@ -629,9 +649,6 @@ for i in range(num_games):
 
     # print("Old Robot Score: ", oldrs)
     # print("Old Human Score: ", oldhs)
-
-    # print("Updated robot: ->", rs)
-    # print("Udated human: ->", hs)
 
 
     if hs < rs:
